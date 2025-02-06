@@ -1,0 +1,103 @@
+name: ipp-usb
+base: ubuntu@24.04  # Specifies the base image to be used in the OCI container (Ubuntu 24.04).
+version: "1.0"  # Version number of the image.
+summary: IPP-over-USB - Driverless IPP printing on USB-connected printers
+description: |
+  ipp-usb is a daemon that enables driverless IPP printing on USB-connected
+  printers. It emulates an IPP network printer, providing full access to the
+  physical printer: Printing, scanning, fax out, and the admin web interface.
+
+license: Apache-2.0  # Specifies the license for the project.
+
+platforms:
+  amd64:  # Supports 64-bit x86 architecture.
+  arm64:  # Supports 64-bit ARM architecture.
+  armhf:  # Supports 32-bit ARM architecture.
+
+services:
+  ipp-usb-server:
+    command: /scripts/run-ipp-usb-server.sh  # Specifies the script to run the IPP-USB server.
+    startup: enabled  # Ensures the service starts when the container starts.
+    override: replace  # Replaces any default service behavior.
+    on-failure: restart  # Restarts the service if it fails.
+
+  ipp-usb:
+    command: /scripts/run-ipp-usb.sh  # Specifies the script to start IPP-USB.
+    startup: enabled
+    override: replace
+    on-failure: restart
+
+parts:
+  goipp:
+    plugin: go  # Uses the Go plugin for building the GoIPP component.
+    source: https://github.com/OpenPrinting/goipp.git  # Clones the GoIPP source code.
+    source-type: git  # Specifies that the source is a Git repository.
+    build-packages:
+      - golang-go  # Installs Go compiler for building GoIPP.
+    override-prime: ""  # No additional steps are needed in the prime stage.
+
+  ipp-usb:
+    plugin: go  # Uses the Go plugin to build IPP-USB.
+    source: https://github.com/OpenPrinting/ipp-usb.git  # Clones the IPP-USB source code.
+    source-type: git
+    override-build: |
+      set -eux  # Enables strict error handling for debugging.
+      craftctl default  # Executes the default build steps.
+
+      # Move the compiled ipp-usb binary to the system's sbin directory.
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/sbin
+      mv ${CRAFT_PART_INSTALL}/bin/ipp-usb ${CRAFT_PART_INSTALL}/usr/sbin/
+
+      # Install configuration files.
+      mkdir -p ${CRAFT_PART_INSTALL}/etc
+      cp ipp-usb.conf ${CRAFT_PART_INSTALL}/etc
+
+      # Install quirks files used by IPP-USB for handling printer-specific quirks.
+      mkdir -p ${CRAFT_PART_INSTALL}/usr/share/ipp-usb/quirks
+      cp ipp-usb-quirks/* ${CRAFT_PART_INSTALL}/usr/share/ipp-usb/quirks/
+
+    build-packages:
+      - golang-go  # Go compiler is required to build IPP-USB.
+      - libavahi-client-dev  # Development files for Avahi (mDNS).
+      - libavahi-common-dev
+      - libusb-1.0-0-dev  # Development files for USB communication.
+      - ronn  # Used for generating documentation.
+
+    stage-packages:
+      - libavahi-client3  # Runtime dependencies for Avahi.
+      - libavahi-common3
+      - libusb-1.0-0  # Runtime USB library needed for IPP-USB.
+
+    prime:
+      - etc  # Includes the configuration files in the final image.
+      - usr/sbin  # Includes the IPP-USB binary.
+      - usr/lib  # Includes necessary system libraries.
+      - usr/share/ipp-usb  # Includes quirk files and other shared resources.
+
+    overlay-packages:
+      - udev  # Ensures that udev is included in the container for device detection.
+
+    after: [goipp]  # Ensures that GoIPP is built before this part.
+
+  scripts:
+    plugin: dump  # Copies scripts without modification.
+    source: scripts/  # Uses the local scripts directory as the source.
+    organize:
+      run-ipp-usb.sh: scripts/run-ipp-usb.sh  # Ensures the script is placed in the correct location.
+      run-ipp-usb-server.sh: scripts/run-ipp-usb-server.sh
+
+    override-prime: |
+      set -eux
+      craftctl default  # Executes the default prime steps.
+
+      # Ensure the run-ipp-usb.sh script has executable permissions.
+      if [ -f "$CRAFT_PRIME/scripts/run-ipp-usb.sh" ]; then
+        chmod +x "$CRAFT_PRIME/scripts/run-ipp-usb.sh"
+      fi
+
+      # Ensure the run-ipp-usb-server.sh script has executable permissions.
+      if [ -f "$CRAFT_PRIME/scripts/run-ipp-usb-server.sh" ]; then
+        chmod +x "$CRAFT_PRIME/scripts/run-ipp-usb-server.sh"
+      fi
+
+    after: [ipp-usb]  # Ensures scripts are added after the main IPP-USB component.
