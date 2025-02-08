@@ -63,19 +63,16 @@ parts:
       - libusb-1.0-0-dev  # Development files for USB communication.
       - ronn  # Used for generating documentation.
 
-    stage-packages:
-      - libavahi-client3  # Runtime dependencies for Avahi.
-      - libavahi-common3
-      - libusb-1.0-0  # Runtime USB library needed for IPP-USB.
-
     prime:
       - etc  # Includes the configuration files in the final image.
       - usr/sbin  # Includes the IPP-USB binary.
-      - usr/lib  # Includes necessary system libraries.
       - usr/share/ipp-usb  # Includes quirk files and other shared resources.
 
     overlay-packages:
       - udev  # Ensures that udev is included in the container for device detection.
+      - libavahi-client3  # Runtime dependencies for Avahi.
+      - libavahi-common3
+      - libusb-1.0-0  # Runtime USB library needed for IPP-USB.
 
     after: [goipp]  # Ensures that GoIPP is built before this part.
 
