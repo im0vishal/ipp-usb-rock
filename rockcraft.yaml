@@ -15,17 +15,25 @@ platforms:
   armhf:  # Supports 32-bit ARM architecture.
 
 services:
+  dbus:
+    command: /scripts/run-dbus.sh
+    override: replace
+    on-failure: restart
+    startup: enabled
+
   ipp-usb-server:
     command: /scripts/run-ipp-usb-server.sh  # Specifies the script to run the IPP-USB server.
     startup: enabled  # Ensures the service starts when the container starts.
     override: replace  # Replaces any default service behavior.
     on-failure: restart  # Restarts the service if it fails.
+    after: [dbus]  # Ensures the IPP-USB server starts after the D-Bus service.
 
   ipp-usb:
     command: /scripts/run-ipp-usb.sh  # Specifies the script to start IPP-USB.
     startup: enabled
     override: replace
     on-failure: restart
+    after: [dbus,ipp-usb-server]  # Ensures IPP-USB starts after the D-Bus service.
 
 parts:
   goipp:
@@ -57,24 +65,50 @@ parts:
       cp ipp-usb-quirks/* ${CRAFT_PART_INSTALL}/usr/share/ipp-usb/quirks/
 
     build-packages:
-      - golang-go  # Go compiler is required to build IPP-USB.
-      - libavahi-client-dev  # Development files for Avahi (mDNS).
+      - golang-go
+      - libavahi-client-dev
       - libavahi-common-dev
-      - libusb-1.0-0-dev  # Development files for USB communication.
-      - ronn  # Used for generating documentation.
+      - libavahi-compat-libdnssd-dev
+      - libdbus-1-dev
+      - libusb-1.0-0-dev
+      - ronn
+
+    stage-packages:
+      - libavahi-client3
+      - libavahi-common3
+      - libusb-1.0-0
+      - udev
 
     prime:
-      - etc  # Includes the configuration files in the final image.
-      - usr/sbin  # Includes the IPP-USB binary.
-      - usr/share/ipp-usb  # Includes quirk files and other shared resources.
+      - etc
+      - usr/sbin
+      - lib    
+      - usr/lib
+      - usr/share/ipp-usb
 
+    after: [goipp]
+
+  avahi-daemon:
+    plugin: nil
     overlay-packages:
-      - udev  # Ensures that udev is included in the container for device detection.
-      - libavahi-client3  # Runtime dependencies for Avahi.
-      - libavahi-common3
-      - libusb-1.0-0  # Runtime USB library needed for IPP-USB.
+      - avahi-daemon
+      - avahi-utils
+      - libnss-mdns
+      - mdns-scan
+      - dbus
+      - python3
+      - dbus-system-bus-common
+    override-build: |
+      craftctl default
+      mkdir -p "${CRAFT_PART_INSTALL}/usr/share/dbus-1/"
+      cp /usr/share/dbus-1/system.conf "${CRAFT_PART_INSTALL}/usr/share/dbus-1/system.conf"
 
-    after: [goipp]  # Ensures that GoIPP is built before this part.
+
+  utils:
+    plugin: nil
+    overlay-packages:
+      - python3
+      - udev
 
   scripts:
     plugin: dump  # Copies scripts without modification.
@@ -82,6 +116,7 @@ parts:
     organize:
       run-ipp-usb.sh: scripts/run-ipp-usb.sh  # Ensures the script is placed in the correct location.
       run-ipp-usb-server.sh: scripts/run-ipp-usb-server.sh
+      run-dbus.sh: scripts/run-dbus.sh
 
     override-prime: |
       set -eux
@@ -97,4 +132,9 @@ parts:
         chmod +x "$CRAFT_PRIME/scripts/run-ipp-usb-server.sh"
       fi
 
-    after: [ipp-usb]  # Ensures scripts are added after the main IPP-USB component.
+      # Ensure the run-dbus.sh script has executable permissions.
+      if [ -f "$CRAFT_PRIME/scripts/run-dbus.sh" ]; then
+        chmod +x "$CRAFT_PRIME/scripts/run-dbus.sh"
+      fi
+
+    after: [ipp-usb,avahi-daemon]  # Ensures scripts are added after the main IPP-USB component.
