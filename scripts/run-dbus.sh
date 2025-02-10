@@ -1,30 +1,45 @@
 #!/bin/sh
 set -eux
 
-echo "Creating system users"
+echo "Creating system users..."
 
-# Create system users with system accounts and no home directories, using nologin shell
-useradd --system --no-create-home --shell /usr/sbin/nologin systemd-resolve || true
-useradd --system --no-create-home --shell /usr/sbin/nologin systemd-network || true
+# Check if users exist before attempting to create them
+if ! id -u systemd-resolve >/dev/null 2>&1; then
+    useradd --system --no-create-home --shell /usr/sbin/nologin systemd-resolve
+fi
 
-echo "Creating directories"
+if ! id -u systemd-network >/dev/null 2>&1; then
+    useradd --system --no-create-home --shell /usr/sbin/nologin systemd-network
+fi
 
-# Create the /run/dbus directory if it doesn't exist, set permissions, and ownership
-mkdir -p /run/dbus
-chmod 755 /run/dbus
-chown root:root /run/dbus
+echo "Ensuring necessary directories exist..."
 
-echo "Starting dbus"
+# Ensure /run/dbus exists with correct permissions
+if [ ! -d /run/dbus ]; then
+    mkdir -p /run/dbus
+    chmod 755 /run/dbus
+    chown root:root /run/dbus
+fi
 
-# Start the dbus daemon in the foreground
+echo "Starting dbus service..."
+
+# Start dbus and verify it's running
 service dbus start
-# Check the status of the dbus service
-service dbus status || true
+if ! pgrep -x "dbus-daemon" >/dev/null; then
+    echo "Failed to start dbus-daemon!" >&2
+    exit 1
+fi
 
-echo "Starting avahi-daemon"
+echo "Starting avahi-daemon..."
 
-# Start the avahi-daemon in the background without dropping root privileges
+# Start avahi-daemon and ensure it's running
 avahi-daemon --daemonize --no-drop-root
+if ! pgrep -x "avahi-daemon" >/dev/null; then
+    echo "Failed to start avahi-daemon!" >&2
+    exit 1
+fi
 
-# Keep the script running to avoid container exit
-tail -f /dev/null
+echo "Services started successfully."
+
+# Keep the container alive using a foreground process
+exec sleep infinity

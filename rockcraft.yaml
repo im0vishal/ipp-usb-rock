@@ -1,140 +1,147 @@
 name: ipp-usb
-base: ubuntu@24.04  # Specifies the base image to be used in the OCI container (Ubuntu 24.04).
-version: "1.0"  # Version number of the image.
+base: ubuntu@24.04  # Specifies the Ubuntu 24.04 base image for the OCI container.
+version: "1.0"  # Defines the version of the container.
 summary: IPP-over-USB - Driverless IPP printing on USB-connected printers
 description: |
   ipp-usb is a daemon that enables driverless IPP printing on USB-connected
   printers. It emulates an IPP network printer, providing full access to the
   physical printer: Printing, scanning, fax out, and the admin web interface.
 
-license: Apache-2.0  # Specifies the license for the project.
+license: Apache-2.0  # License type for this project.
 
 platforms:
   amd64:  # Supports 64-bit x86 architecture.
   arm64:  # Supports 64-bit ARM architecture.
   armhf:  # Supports 32-bit ARM architecture.
 
+# Services that run inside the container
 services:
   dbus:
-    command: /scripts/run-dbus.sh
-    override: replace
-    on-failure: restart
-    startup: enabled
+    command: /scripts/run-dbus.sh  # Script to start D-Bus inside the container.
+    override: replace  # Overrides any default service behavior.
+    on-failure: restart  # Automatically restarts the service on failure.
+    startup: enabled  # Ensures the service starts when the container starts.
 
   ipp-usb-server:
-    command: /scripts/run-ipp-usb-server.sh  # Specifies the script to run the IPP-USB server.
-    startup: enabled  # Ensures the service starts when the container starts.
-    override: replace  # Replaces any default service behavior.
-    on-failure: restart  # Restarts the service if it fails.
-    after: [dbus]  # Ensures the IPP-USB server starts after the D-Bus service.
-
-  ipp-usb:
-    command: /scripts/run-ipp-usb.sh  # Specifies the script to start IPP-USB.
+    command: /scripts/run-ipp-usb-server.sh  # Starts the IPP-USB server.
     startup: enabled
     override: replace
     on-failure: restart
-    after: [dbus,ipp-usb-server]  # Ensures IPP-USB starts after the D-Bus service.
+    after: [dbus]  # Ensures ipp-usb-server starts after D-Bus.
 
+  ipp-usb:
+    command: /scripts/run-ipp-usb.sh  # Starts the IPP-USB daemon.
+    startup: enabled
+    override: replace
+    on-failure: restart
+    after: [dbus, ipp-usb-server]  # Starts after both D-Bus and IPP-USB server.
+
+# Parts define the different components that make up the OCI image.
 parts:
   goipp:
-    plugin: go  # Uses the Go plugin for building the GoIPP component.
-    source: https://github.com/OpenPrinting/goipp.git  # Clones the GoIPP source code.
-    source-type: git  # Specifies that the source is a Git repository.
+    plugin: go  # Uses the Go plugin to build GoIPP.
+    source: https://github.com/OpenPrinting/goipp.git  # Git repository for GoIPP.
+    source-type: git  # Specifies the source type as Git.
     build-packages:
       - golang-go  # Installs Go compiler for building GoIPP.
-    override-prime: ""  # No additional steps are needed in the prime stage.
+    override-prime: ""  # No additional steps in the prime stage.
 
   ipp-usb:
     plugin: go  # Uses the Go plugin to build IPP-USB.
-    source: https://github.com/OpenPrinting/ipp-usb.git  # Clones the IPP-USB source code.
+    source: https://github.com/OpenPrinting/ipp-usb.git  # Git repository for IPP-USB.
     source-type: git
-    override-build: |
-      set -eux  # Enables strict error handling for debugging.
-      craftctl default  # Executes the default build steps.
 
-      # Move the compiled ipp-usb binary to the system's sbin directory.
+    override-build: |
+      set -eux  # Enables strict error handling.
+      craftctl default  # Executes default build steps.
+
+      # Move the compiled binary to /usr/sbin (standard location for system binaries).
       mkdir -p ${CRAFT_PART_INSTALL}/usr/sbin
       mv ${CRAFT_PART_INSTALL}/bin/ipp-usb ${CRAFT_PART_INSTALL}/usr/sbin/
 
-      # Install configuration files.
+      # Install the IPP-USB configuration file.
       mkdir -p ${CRAFT_PART_INSTALL}/etc
       cp ipp-usb.conf ${CRAFT_PART_INSTALL}/etc
 
-      # Install quirks files used by IPP-USB for handling printer-specific quirks.
+      # Install printer-specific quirks files.
       mkdir -p ${CRAFT_PART_INSTALL}/usr/share/ipp-usb/quirks
       cp ipp-usb-quirks/* ${CRAFT_PART_INSTALL}/usr/share/ipp-usb/quirks/
 
     build-packages:
-      - golang-go
-      - libavahi-client-dev
-      - libavahi-common-dev
-      - libavahi-compat-libdnssd-dev
-      - libdbus-1-dev
-      - libusb-1.0-0-dev
-      - ronn
+      - golang-go  # Go compiler
+      - libavahi-client-dev  # Avahi client development library
+      - libavahi-common-dev  # Common Avahi development library
+      - libavahi-compat-libdnssd-dev  # Compatibility layer for Bonjour (Apple’s DNS-SD)
+      - libdbus-1-dev  # D-Bus development library
+      - libusb-1.0-0-dev  # USB handling library
+      - ronn  # Manpage generation tool
 
     stage-packages:
-      - libavahi-client3
-      - libavahi-common3
-      - libusb-1.0-0
-      - udev
+      - libavahi-client3  # Avahi client runtime
+      - libavahi-common3  # Common Avahi runtime library
+      - libusb-1.0-0  # USB runtime library
+      - udev  # Device management daemon (used for hardware discovery)
 
     prime:
-      - etc
-      - usr/sbin
-      - lib    
-      - usr/lib
-      - usr/share/ipp-usb
+      - etc  # Includes configuration files
+      - usr/sbin  # Includes the compiled binaries
+      - lib  # Shared libraries
+      - usr/lib  # Additional libraries
+      - usr/share/ipp-usb  # Includes additional IPP-USB data
 
-    after: [goipp]
+    after: [goipp]  # Ensures GoIPP is built before IPP-USB.
 
   avahi-daemon:
-    plugin: nil
-    overlay-packages:
-      - avahi-daemon
-      - avahi-utils
-      - libnss-mdns
-      - mdns-scan
-      - dbus
-      - python3
-      - dbus-system-bus-common
-    override-build: |
-      craftctl default
-      mkdir -p "${CRAFT_PART_INSTALL}/usr/share/dbus-1/"
-      cp /usr/share/dbus-1/system.conf "${CRAFT_PART_INSTALL}/usr/share/dbus-1/system.conf"
+    plugin: nil  # No specific build system, just installs required packages.
 
+    build-packages: 
+      - avahi-daemon  # Ensures Avahi daemon is installed during the build phase.
+
+    overlay-packages:
+      - avahi-daemon  # Avahi service for mDNS support
+      - avahi-utils  # Utilities for Avahi
+      - libnss-mdns  # Enables mDNS name resolution
+      - mdns-scan  # mDNS scanning tool
+      - dbus  # D-Bus system for interprocess communication
+      - libavahi-client3  # Avahi client library
+      - libavahi-common3  # Common Avahi runtime library
+
+    override-build: |
+      craftctl default  # Executes the default build steps.
+
+      # Ensure D-Bus configuration files are copied.
+      mkdir -p "${CRAFT_PART_INSTALL}/usr/share/dbus-1/"
+      cp -r /usr/share/dbus-1/* "${CRAFT_PART_INSTALL}/usr/share/dbus-1/"
 
   utils:
-    plugin: nil
+    plugin: nil  # No build system, just overlays system utilities.
     overlay-packages:
-      - python3
-      - udev
+      - udev  # Provides hardware event monitoring.
 
   scripts:
     plugin: dump  # Copies scripts without modification.
-    source: scripts/  # Uses the local scripts directory as the source.
+    source: scripts/  # Uses the local `scripts/` directory as the source.
+
     organize:
-      run-ipp-usb.sh: scripts/run-ipp-usb.sh  # Ensures the script is placed in the correct location.
+      run-ipp-usb.sh: scripts/run-ipp-usb.sh
       run-ipp-usb-server.sh: scripts/run-ipp-usb-server.sh
-      run-dbus.sh: scripts/run-dbus.sh
+      run-dbus.sh: scripts/run-dbus.sh  # Ensures scripts are placed in the correct paths.
 
     override-prime: |
       set -eux
-      craftctl default  # Executes the default prime steps.
+      craftctl default  # Executes default prime steps.
 
-      # Ensure the run-ipp-usb.sh script has executable permissions.
+      # Ensure the scripts have executable permissions.
       if [ -f "$CRAFT_PRIME/scripts/run-ipp-usb.sh" ]; then
         chmod +x "$CRAFT_PRIME/scripts/run-ipp-usb.sh"
       fi
 
-      # Ensure the run-ipp-usb-server.sh script has executable permissions.
       if [ -f "$CRAFT_PRIME/scripts/run-ipp-usb-server.sh" ]; then
         chmod +x "$CRAFT_PRIME/scripts/run-ipp-usb-server.sh"
       fi
 
-      # Ensure the run-dbus.sh script has executable permissions.
       if [ -f "$CRAFT_PRIME/scripts/run-dbus.sh" ]; then
         chmod +x "$CRAFT_PRIME/scripts/run-dbus.sh"
       fi
 
-    after: [ipp-usb,avahi-daemon]  # Ensures scripts are added after the main IPP-USB component.
+    after: [ipp-usb, avahi-daemon]  # Ensures scripts are added after the main components.
