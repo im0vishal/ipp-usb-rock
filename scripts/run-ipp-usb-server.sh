@@ -5,14 +5,14 @@
 # Create needed directories (ignore errors)
 mkdir -p /etc/ipp-usb 
 mkdir -p /var/log/ipp-usb 
-mkdir -p /var/lock/ipp-usb 
-mkdir -p /var/dev/ipp-usb 
+mkdir -p /var/lock
+mkdir -p /var/dev
 mkdir -p /usr/share/ipp-usb/quirks 
 
 # Put config files in place (do not overwrite existing user config)
 cp -r /usr/share/ipp-usb/* /etc/ipp-usb/
-if [ ! -f /etc/ipp-usb.conf ]; then
-    cp etc/ipp-usb.conf /etc/
+if [ ! -f /etc/ipp-usb/ipp-usb.conf ]; then
+    cp etc/ipp-usb/ipp-usb.conf /etc/ipp-usb/
 fi
 
 # Monitor appearing/disappearing of USB devices
