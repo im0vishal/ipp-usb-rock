@@ -117,6 +117,7 @@ parts:
     plugin: nil  # No build system, just overlays system utilities.
     overlay-packages:
       - udev  # Provides hardware event monitoring.
+      - usbutils  # USB utilities for device management.
 
   scripts:
     plugin: dump  # Copies scripts without modification.
