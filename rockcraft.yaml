@@ -118,6 +118,7 @@ parts:
     overlay-packages:
       - udev  # Provides hardware event monitoring.
       - usbutils  # USB utilities for device management.
+      - strace  # System call tracer for debugging.
 
   scripts:
     plugin: dump  # Copies scripts without modification.
