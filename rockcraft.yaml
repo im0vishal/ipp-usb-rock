@@ -23,14 +23,14 @@ services:
     startup: enabled  # Ensures the service starts when the container starts.
 
   ipp-usb-server:
-    command: /scripts/run-ipp-usb-server.sh  # Starts the IPP-USB server.
+    command: /scripts/run-ipp-usb-server.sh  # Starts the IPP-USB server, which acts as an intermediary between the printer and system.
     startup: enabled
     override: replace
     on-failure: restart
     after: [dbus]  # Ensures ipp-usb-server starts after D-Bus.
 
   ipp-usb:
-    command: /scripts/run-ipp-usb.sh  # Starts the IPP-USB daemon.
+    command: /scripts/run-ipp-usb.sh  # Starts the main IPP-USB daemon that handles USB-to-IPP conversion.
     startup: enabled
     override: replace
     on-failure: restart
@@ -39,7 +39,7 @@ services:
 # Parts define the different components that make up the OCI image.
 parts:
   goipp:
-    plugin: go  # Uses the Go plugin to build GoIPP.
+    plugin: go  # Uses the Go plugin to build GoIPP (a dependency of ipp-usb).
     source: https://github.com/OpenPrinting/goipp.git  # Git repository for GoIPP.
     source-type: git  # Specifies the source type as Git.
     build-packages:
@@ -63,31 +63,37 @@ parts:
       mkdir -p ${CRAFT_PART_INSTALL}/etc
       cp ipp-usb.conf ${CRAFT_PART_INSTALL}/etc
 
-      # Install printer-specific quirks files.
+      # Install printer-specific quirks files (used to handle vendor-specific behaviors).
       mkdir -p ${CRAFT_PART_INSTALL}/usr/share/ipp-usb/quirks
       cp ipp-usb-quirks/* ${CRAFT_PART_INSTALL}/usr/share/ipp-usb/quirks/
 
     build-packages:
-      - golang-go  # Go compiler
-      - libavahi-client-dev  # Avahi client development library
+      - golang-go  # Go compiler for building ipp-usb
+      - libavahi-client-dev  # Avahi client development library for network discovery
       - libavahi-common-dev  # Common Avahi development library
       - libavahi-compat-libdnssd-dev  # Compatibility layer for Bonjour (Apple’s DNS-SD)
       - libdbus-1-dev  # D-Bus development library
-      - libusb-1.0-0-dev  # USB handling library
+      - libusb-1.0-0-dev  # USB handling library needed for direct USB communication
       - ronn  # Manpage generation tool
 
     stage-packages:
-      - libavahi-client3  # Avahi client runtime
+      - libavahi-client3  # Avahi client runtime for mDNS
       - libavahi-common3  # Common Avahi runtime library
-      - libusb-1.0-0  # USB runtime library
+      - libusb-1.0-0  # USB runtime library for handling USB devices
       - udev  # Device management daemon (used for hardware discovery)
 
     prime:
       - etc  # Includes configuration files
+      - -etc/init.d  # Excludes traditional init system scripts (not needed for container)
+      - -etc/udev  # Excludes system-wide udev rules (handled manually)
       - usr/sbin  # Includes the compiled binaries
-      - lib  # Shared libraries
-      - usr/lib  # Additional libraries
-      - usr/share/ipp-usb  # Includes additional IPP-USB data
+      - -usr/sbin/systemd-hwdb  # Excludes unnecessary systemd-related components
+      - lib  # Shared libraries required at runtime
+      - -lib/modprobe.d  # Excludes system-level module configurations
+      - -lib/systemd  # Excludes systemd-related components (not needed in OCI container)
+      - -lib/udev  # Excludes udev system-wide rules
+      - usr/lib  # Includes required shared libraries
+      - usr/share/ipp-usb  # Includes additional IPP-USB data (quirks, configs, etc.)
 
     after: [goipp]  # Ensures GoIPP is built before IPP-USB.
 
@@ -98,27 +104,25 @@ parts:
       - avahi-daemon  # Ensures Avahi daemon is installed during the build phase.
 
     overlay-packages:
-      - avahi-daemon  # Avahi service for mDNS support
+      - avahi-daemon  # Avahi service for mDNS support (auto-discovery of printers)
       - avahi-utils  # Utilities for Avahi
       - libnss-mdns  # Enables mDNS name resolution
-      - mdns-scan  # mDNS scanning tool
+      - mdns-scan  # mDNS scanning tool for device discovery
       - dbus  # D-Bus system for interprocess communication
-      - libavahi-client3  # Avahi client library
+      - libavahi-client3  # Avahi client library for service discovery
       - libavahi-common3  # Common Avahi runtime library
 
     override-build: |
       craftctl default  # Executes the default build steps.
 
-      # Ensure D-Bus configuration files are copied.
+      # Ensure D-Bus configuration files are copied for service discovery.
       mkdir -p "${CRAFT_PART_INSTALL}/usr/share/dbus-1/"
       cp -r /usr/share/dbus-1/* "${CRAFT_PART_INSTALL}/usr/share/dbus-1/"
 
   utils:
     plugin: nil  # No build system, just overlays system utilities.
     overlay-packages:
-      - udev  # Provides hardware event monitoring.
-      - usbutils  # USB utilities for device management.
-      - strace  # System call tracer for debugging.
+      - udev  # Provides hardware event monitoring and device management.
 
   scripts:
     plugin: dump  # Copies scripts without modification.
