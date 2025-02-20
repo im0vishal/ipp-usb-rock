@@ -1,6 +1,5 @@
- #### ipp-usb-rock
+#### ipp-usb-rock
 
-```markdown
 ## THE ROCK (OCI CONTAINER IMAGE)
 
 ### Install from GitHub Container Registry
