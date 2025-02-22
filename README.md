@@ -1,5 +1,3 @@
-#### ipp-usb-rock
-
 ## THE ROCK (OCI CONTAINER IMAGE)
 
 ### Install from GitHub Container Registry
@@ -25,14 +23,16 @@ To run the container after pulling the image, use:
   sudo docker run --rm --network host \
       -v /dev/bus/usb:/dev/bus/usb:ro \
       --device-cgroup-rule='c 189:* rmw' \
+      -v /run/udev:/run/udev:ro \
       --name ipp-usb-container \
       ghcr.io/openprinting/ipp-usb:latest
 ```
 
 - `--rm`: Automatically removes the container once it stops.
-- `--network host`: Ensures IPP-over-USB communication and Avahi service discovery work correctly.
+- `--network host`: Uses the host network, ensuring IPP-over-USB and Avahi service discovery work correctly.
 - `-v /dev/bus/usb:/dev/bus/usb:ro`: Grants the container read-only access to USB devices.
-- `--device-cgroup-rule='c 189:* rmw'`: Allows the container to manage USB devices.
+- `--device-cgroup-rule='c 189:* rmw'`: Grants the container permission to manage USB devices (189:* covers USB device nodes).
+- `-v /run/udev:/run/udev:ro`: Mounts udev info, allowing the container to detect new USB devices.
 
 To check the logs of `ipp-usb`, run:
 ```sh
@@ -70,7 +70,7 @@ Navigate to the directory containing `rockcraft.yaml`, then run:
 
 Once the `.rock` file is built, compile a Docker image from it using:
 ```sh
-  sudo rockcraft.skopeo --insecure-policy copy oci-archive:<rock_image> docker-daemon:ipp-usb:latest
+  sudo rockcraft.skopeo --insecure-policy copy oci-archive:<rock_image_name> docker-daemon:ipp-usb:latest
 ```
 
 **Run the `ipp-usb` Docker Container**
@@ -79,9 +79,18 @@ Once the `.rock` file is built, compile a Docker image from it using:
   sudo docker run --rm --network host \
       -v /dev/bus/usb:/dev/bus/usb:ro \
       --device-cgroup-rule='c 189:* rmw' \
-      --name <ipp-usb-container-name> \
+      -v /run/udev:/run/udev:ro \
+      --name ipp-usb-container \
       ipp-usb:latest
 ```
+
+### Accessing the Container Shell
+
+To enter the running `ipp-usb` container and access a shell inside it, use:
+```sh
+  sudo docker exec -it ipp-usb-container bash
+```
+This allows you to inspect logs, debug issues, or manually run commands inside the container.
 
 ### Configuration
 
@@ -95,11 +104,12 @@ To customize the configuration, mount a modified config file:
       -v /dev/bus/usb:/dev/bus/usb:ro \
       --device-cgroup-rule='c 189:* rmw' \
       -v /path/to/custom/ipp-usb.conf:/etc/ipp-usb.conf:ro \
-      --name <ipp-usb-container-name> \
+      -v /run/udev:/run/udev:ro \
+      --name ipp-usb-container \
       ghcr.io/openprinting/ipp-usb:latest
 ```
 
 ### Handling UDEV Events
 
 Since `ipp-usb` relies on `UDEV` rules to detect IPP-over-USB devices, and containerized environments do not allow direct modification of system-wide `UDEV` rules, the Rock image includes a workaround. It monitors `UDEV` events using `udevadm` inside the container to detect device connections dynamically.
-```
+
