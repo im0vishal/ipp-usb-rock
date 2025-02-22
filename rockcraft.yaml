@@ -1,6 +1,6 @@
 name: ipp-usb
 base: ubuntu@24.04
-version: "latest"
+version: "1.0"
 summary: IPP-over-USB - Driverless IPP printing on USB-connected printers
 description: |
   ipp-usb is a daemon that enables driverless IPP printing on USB-connected
@@ -131,6 +131,9 @@ parts:
     plugin: nil
     overlay-packages:
       - usbutils
+      - strace       # For tracing system calls
+      - openssh-server  # To enable SSH access
+      - bash
 
   scripts:
     plugin: dump
