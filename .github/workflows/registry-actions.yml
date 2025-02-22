@@ -35,11 +35,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ipp-usb-rock
-          path: ${{ steps.rockcraft.outputs.rock }}
+          path: "*.rock"
 
   publish-rock:
     needs: build-rock
-    if: github.ref_name == 'main'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -55,12 +55,13 @@ jobs:
           sudo snap install rockcraft --classic
           sudo snap install docker
           sudo snap install yq
+          sudo apt-get update
+          sudo apt-get install -y skopeo
 
       - name: Ensure Docker Daemon is Running
         run: |
-          sudo systemctl start docker
-          sudo systemctl enable docker
-          sudo systemctl is-active --quiet docker || sudo systemctl start docker
+          sudo usermod -aG docker $USER
+          newgrp docker
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3.2.0
@@ -84,7 +85,7 @@ jobs:
           VERSION="$(yq '.version' rockcraft.yaml)"
           ROCK="$(ls *.rock | tail -n 1)"
           # Push to Docker Hub
-          sudo rockcraft.skopeo --insecure-policy copy oci-archive:"${ROCK}" docker-daemon:"${USERNAME}/${IMAGE}:${VERSION}-edge"
+          skopeo copy --insecure-policy oci-archive:"${ROCK}" docker-daemon:"${USERNAME}/${IMAGE}:${VERSION}-edge"
           docker push ${USERNAME}/${IMAGE}:${VERSION}-edge
           docker tag ${USERNAME}/${IMAGE}:${VERSION}-edge ${USERNAME}/${IMAGE}:latest
           docker push ${USERNAME}/${IMAGE}:latest
@@ -100,13 +101,13 @@ jobs:
         env:
           USERNAME: ${{ secrets.DOCKER_USERNAME }}
         run: |
-            IMAGE="$(yq '.name' rockcraft.yaml)"
-            VERSION="$(yq '.version' rockcraft.yaml)"
-            ROCK="$(ls *.rock | tail -n 1)"
-            # Push to Docker Hub
-            sudo rockcraft.skopeo --insecure-policy copy oci-archive:"${ROCK}" docker-daemon:"${USERNAME}/${IMAGE}:${VERSION}-stable"
-            docker push ${USERNAME}/${IMAGE}:${VERSION}-stable
-            # Push to GitHub Packages
-            GITHUB_IMAGE="ghcr.io/${{ github.repository_owner }}/${IMAGE}"
-            docker tag ${USERNAME}/${IMAGE}:${VERSION}-stable ${GITHUB_IMAGE}:${VERSION}-stable
-            docker push ${GITHUB_IMAGE}:${VERSION}-stable
+          IMAGE="$(yq '.name' rockcraft.yaml)"
+          VERSION="$(yq '.version' rockcraft.yaml)"
+          ROCK="$(ls *.rock | tail -n 1)"
+          # Push to Docker Hub
+          skopeo copy --insecure-policy oci-archive:"${ROCK}" docker-daemon:"${USERNAME}/${IMAGE}:${VERSION}-stable"
+          docker push ${USERNAME}/${IMAGE}:${VERSION}-stable
+          # Push to GitHub Packages
+          GITHUB_IMAGE="ghcr.io/${{ github.repository_owner }}/${IMAGE}"
+          docker tag ${USERNAME}/${IMAGE}:${VERSION}-stable ${GITHUB_IMAGE}:${VERSION}-stable
+          docker push ${GITHUB_IMAGE}:${VERSION}-stable
