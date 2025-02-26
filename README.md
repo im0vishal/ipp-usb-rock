@@ -15,7 +15,7 @@ You can pull the `ipp-usb` Docker image from the GitHub Container Registry.
 **From GitHub Container Registry** <br>
 To pull the image from the GitHub Container Registry, run the following command:
 ```sh
-  sudo docker pull ghcr.io/openprinting/ipp-usb:latest
+  sudo docker pull ghcr.io/im0vishal/ipp-usb:latest
 ```
 
 To run the container after pulling the image, use:
@@ -104,7 +104,7 @@ To customize the configuration, mount a modified config file:
       -v /path/to/custom/ipp-usb.conf:/etc/ipp-usb.conf:ro \
       -v /run/udev:/run/udev:ro \
       --name ipp-usb-container \
-      ghcr.io/openprinting/ipp-usb:latest
+      ghcr.io/im0vishal/ipp-usb:latest
 ```
 
 ### Handling UDEV Events
