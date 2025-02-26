@@ -34,7 +34,7 @@ jobs:
       - name: Upload Rock Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cups-rock
+          name: ipp-usb-rock
           path: ${{ steps.rockcraft.outputs.rock }}
 
   publish-rock:
@@ -48,7 +48,7 @@ jobs:
       - name: Download Rock Artifact
         uses: actions/download-artifact@v4
         with:
-          name: cups-rock
+          name: ipp-usb-rock
 
       - name: Install Dependencies
         run: |
