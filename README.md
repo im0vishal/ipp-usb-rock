@@ -53,8 +53,6 @@ To check the logs of `ipp-usb`, run:
   sudo snap install rockcraft --classic
 ```
 
-**Skopeo**: Skopeo should be installed to compile `*.rock` files into Docker images. It comes bundled with Rockcraft, so no separate installation is required.
-
 #### Step-by-Step Guide
 
 **Build the `ipp-usb` Rock Image**
