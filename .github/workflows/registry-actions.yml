@@ -62,12 +62,20 @@ jobs:
           sudo systemctl enable docker
           sudo systemctl is-active --quiet docker || sudo systemctl start docker
 
-      - name: Verify Docker Secrets
+      - name: Debug Secrets
         run: |
-          if [[ -z "${{ secrets.DOCKER_USERNAME }}" || -z "${{ secrets.DOCKER_PASSWORD }}" ]]; then
-            echo "ERROR: Docker credentials are missing! Set DOCKER_USERNAME and DOCKER_PASSWORD in repository secrets."
-            exit 1
+          if [[ -z "${{ secrets.DOCKER_USERNAME }}" ]]; then
+            echo "DOCKER_USERNAME is EMPTY!"
+          else
+            echo "DOCKER_USERNAME is SET!"
           fi
+
+          if [[ -z "${{ secrets.DOCKER_PASSWORD }}" ]]; then
+            echo "DOCKER_PASSWORD is EMPTY!"
+          else
+            echo "DOCKER_PASSWORD is SET!"
+          fi
+
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3.2.0
