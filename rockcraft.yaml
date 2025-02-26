@@ -1,6 +1,6 @@
 name: ipp-usb
 base: ubuntu@24.04
-version: "1.0"
+version: "latest"
 summary: IPP-over-USB - Driverless IPP printing on USB-connected printers
 description: |
   ipp-usb is a daemon that enables driverless IPP printing on USB-connected
