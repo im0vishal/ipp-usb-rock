@@ -2,34 +2,19 @@ name: Push new tag update to stable branch
 
 on:
   schedule:
-    - cron: "9 7 * * *" # Runs daily at 07:09 UTC
+    # Daily for now
+    - cron: "9 7 * * *"
   workflow_dispatch:
 
 jobs:
   update-snapcraft-yaml:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Install Dependencies
-        run: |
-          sudo snap install yq
-
-      - name: Update Version in snapcraft.yaml
-        run: |
-          # Extract latest version number
-          LATEST_VERSION=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.tag_name')
-          
-          # Update snapcraft.yaml (assuming `version: 'x.y.z'` format)
-          yq -i '.version = "'"${LATEST_VERSION}"'"' snapcraft.yaml
-
-      - name: Commit and Push Changes
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add snapcraft.yaml
-          git commit -m "Auto-update snapcraft.yaml to version $LATEST_VERSION"
-          git push origin main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout this repo
+        uses: actions/checkout@v3
+      - name: Run desktop-snaps action
+        uses: ubuntu/desktop-snaps@stable
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repo: ${{ github.repository }}
+          rock-version-schema: '^ghostpdl-(\d+\.\d+\.\d+)'
