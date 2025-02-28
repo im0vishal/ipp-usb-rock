@@ -41,6 +41,7 @@ parts:
     plugin: go
     source: https://github.com/OpenPrinting/ipp-usb.git
     source-type: git
+    source-branch: master
 
     override-build: |
       set -eux
