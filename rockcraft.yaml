@@ -78,12 +78,12 @@ parts:
     plugin: autotools
     source: https://github.com/libusb/libusb.git
     source-type: git
-    source-tag: 'v1.0.27'  # Or your desired version
+    source-tag: 'v1.0.27'  
     source-depth: 1
 
     autotools-configure-parameters:
       - --disable-udev
-      - --prefix=/usr           # Install to /usr to ensure standard library locations
+      - --prefix=/usr    
 
     build-packages:
       - build-essential
@@ -131,9 +131,7 @@ parts:
     plugin: nil
     overlay-packages:
       - usbutils
-      - strace       # For tracing system calls
-      - openssh-server  # To enable SSH access
-      - bash
+      - strace 
 
   scripts:
     plugin: dump
