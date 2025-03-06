@@ -127,12 +127,6 @@ parts:
       craftctl default
       mkdir -p "${CRAFT_PART_INSTALL}/usr/share/dbus-1/"
       cp -r /usr/share/dbus-1/* "${CRAFT_PART_INSTALL}/usr/share/dbus-1/"
-    
-  utils:
-    plugin: nil
-    overlay-packages:
-      - usbutils
-      - strace 
 
   scripts:
     plugin: dump
