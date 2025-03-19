@@ -18,7 +18,7 @@ platforms:
   armhf:
 
 services:
-  avahi:
+  avahi-daemon:
     command: /scripts/run-avahi.sh
     override: replace
     on-failure: restart
@@ -29,7 +29,7 @@ services:
     startup: enabled
     override: replace
     on-failure: restart
-    after: [avahi]
+    after: [avahi-daemon]
 
 parts:
   goipp:
@@ -208,7 +208,6 @@ parts:
   utils:
     plugin: nil
     overlay-packages:
-      - python3
       - dbus
       - libnss-mdns
     override-prime: |
@@ -221,6 +220,14 @@ parts:
       chown 584792:584792 "$AVAHI_RUN_DIR"
       chmod 777 "$AVAHI_RUN_DIR"
 
+      # Ensure ipp-usb binary is executable and owned by _daemon_
+      IPP_USB_BIN="$CRAFT_PRIME/usr/sbin/ipp-usb"
+      if [ -f "$IPP_USB_BIN" ]; then
+        chown root:584792 "$IPP_USB_BIN"   # Owned by root, but executable by _daemon_
+        chmod 750 "$IPP_USB_BIN"           # Only root and _daemon_ can execute
+        chmod u+s "$IPP_USB_BIN"           # Set SUID so it runs as root when executed
+      fi
+
       # Set up D-Bus runtime directory
       DBUS_RUN_DIR="$CRAFT_PRIME/var/run/dbus"
       mkdir -p "$DBUS_RUN_DIR"
@@ -231,19 +238,19 @@ parts:
       STATE_DIR="$CRAFT_PRIME/var/lib/ipp-usb"
       mkdir -p "$STATE_DIR"
       chown 584792:584792 "$STATE_DIR"
-      chmod 777 "$STATE_DIR"
+      chmod 770 "$STATE_DIR"
 
       # Set up IPP-USB runtime directories
       IPP_USB_RUN_DIR="$CRAFT_PRIME/var/ipp-usb"
       mkdir -p "$IPP_USB_RUN_DIR"
       chown 584792:584792 "$IPP_USB_RUN_DIR"
-      chmod 777 "$IPP_USB_RUN_DIR"
+      chmod 770 "$IPP_USB_RUN_DIR"
 
       # Set up lock directory for IPP-USB
       LOCK_DIR="$IPP_USB_RUN_DIR/lock"
       mkdir -p "$LOCK_DIR"
       chown 584792:584792 "$LOCK_DIR"
-      chmod 777 "$LOCK_DIR"
+      chmod 770 "$LOCK_DIR"
 
       # Set up log directory for IPP-USB
       LOG_DIR="$CRAFT_PRIME/var/log/ipp-usb"
@@ -251,11 +258,34 @@ parts:
       chown 584792:584792 "$LOG_DIR"
       chmod 770 "$LOG_DIR"
 
+      DEV_DIR="$CRAFT_PRIME/var/dev"
+      mkdir -p "$DEV_DIR"
+      chown 584792:584792 "$DEV_DIR"
+      chmod 770 "$DEV_DIR"
+
       # Set up log file for IPP-USB
       LOG_FILE="$LOG_DIR/main.log"
       touch "$LOG_FILE"
       chown 584792:584792 "$LOG_FILE"
       chmod 644 "$LOG_FILE"
+
+      # Set up /etc/ipp-usb directory for configuration files
+      CONF_DIR="$CRAFT_PRIME/etc/ipp-usb"
+      mkdir -p "$CONF_DIR"
+      chown 584792:584792 "$CONF_DIR"
+      chmod 770 "$CONF_DIR"
+
+      # Set up /usr/share/ipp-usb/quirks directory
+      QUIRKS_DIR="$CRAFT_PRIME/usr/share/ipp-usb/quirks"
+      mkdir -p "$QUIRKS_DIR"
+      chown 584792:584792 "$QUIRKS_DIR"
+      chmod 770 "$QUIRKS_DIR"
+
+      # Create default ipp-usb.conf file if missing
+      CONF_FILE="$CONF_DIR/ipp-usb.conf"
+      touch "$CONF_FILE"
+      chown 584792:584792 "$CONF_FILE"
+      chmod 644 "$CONF_FILE"
 
     after: [ipp-usb, avahi]
 

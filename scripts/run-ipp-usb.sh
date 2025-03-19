@@ -3,29 +3,30 @@
 #set -e -x
 
 # Create needed directories (ignore errors)
-mkdir -p /etc/ipp-usb/quirks || :
+mkdir -p /etc/ipp-usb || :
 mkdir -p /var/log/ipp-usb || :
 mkdir -p /var/lock || :
 mkdir -p /var/dev || :
 mkdir -p /usr/share/ipp-usb/quirks || :
 
-# Create log file and set permissions
-LOG_FILE="/var/log/ipp-usb/main.log"
-touch "$LOG_FILE"
-chown 584792:584792 "$LOG_FILE"
-chmod 664 "$LOG_FILE"
+# Put config files in place (do not overwrite existing user config)
+yes no | cp -i /usr/share/ipp-usb/quirks/* /etc/ipp-usb/quirks >/dev/null 2>&1 || :
+if [ ! -f /etc/ipp-usb/ipp-usb.conf ]; then
+    cp /usr/share/ipp-usb/ipp-usb.conf /etc/ipp-usb/ >/dev/null 2>&1 || :
+fi
 
-# Ensure config files exist
-install -m 644 -D /usr/share/ipp-usb/quirks/* /etc/ipp-usb/quirks/ || :
-[ ! -f /etc/ipp-usb/ipp-usb.conf ] && install -m 644 -D /usr/share/ipp-usb/ipp-usb.conf /etc/ipp-usb/
-
-# Check if avahi-daemon is running
-while ! pgrep -x "avahi-daemon" >/dev/null; do
+# Wait for avahi-daemon to initialize
+while true; do
+    if [ -f "/var/run/avahi-daemon/pid" ] || [ -f "/run/avahi-daemon/pid" ]; then
+        echo "[$(date)] avahi-daemon is active. Starting ipp-usb..."
+        break
+    fi
     echo "[$(date)] Waiting for avahi-daemon to initialize..."
     sleep 1
 done
 
-echo "[$(date)] avahi-daemon is active. Starting ipp-usb..."
+# Run ipp-usb with logging
+echo "[$(date)] Running ipp-usb..."
 
-# Run ipp-usb and log output
-exec /usr/sbin/ipp-usb "$@" 2>&1 | tee -a "$LOG_FILE"
+# Run ipp-usb with the provided command-line arguments
+exec /usr/sbin/ipp-usb "$@"
