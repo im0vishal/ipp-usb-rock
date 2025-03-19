@@ -1,6 +1,3 @@
 # Ignore all .rock files
 *.rock
 
-# Allow Rocks inside GitHub Actions builds
-!build/*.rock
-!dist/*.rock
