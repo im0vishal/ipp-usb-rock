@@ -117,7 +117,7 @@ The `ipp-usb` container uses a configuration file located at:
 ```
 By default, the container uses the built-in configuration, which can be modified from inside the container. 
 
-### **Modifying the Configuration File Inside the Container**  
+**Modifying the Configuration File Inside the Container**  
 
 #### **1. Enter the Running Container**  
 Use the following command to access the container’s shell:  
@@ -141,7 +141,7 @@ Exit the container and restart it to apply the updated configuration:
 sudo docker restart ipp-usb
 ```
 
-**Viewing Logs in the `ipp-usb` Container**  
+### **Viewing Logs in the `ipp-usb` Container**  
 
 The `ipp-usb` container logs important events and errors to `/var/log/ipp-usb/main.log`. Since the container is immutable, logs are stored inside the container and can be accessed using Docker commands.  
 
