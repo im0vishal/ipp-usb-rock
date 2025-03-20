@@ -17,13 +17,13 @@ To run the `ipp-usb` container while ensuring that its state persists across res
 #### **1. Pull the `ipp-usb` Docker Image**  
 The latest image is available on the GitHub Container Registry. Pull it using:  
 ```sh
-sudo docker pull ghcr.io/openprinting/ipp-usb:latest
+  sudo docker pull ghcr.io/openprinting/ipp-usb:latest
 ```  
 
 #### **2. Create a Persistent Storage Volume**  
 `ipp-usb` maintains important state files that should persist across container restarts. Create a Docker volume for this:  
 ```sh
-sudo docker volume create ipp-usb-storage
+  sudo docker volume create ipp-usb-storage
 ```  
 This volume will store:  
 - **Persistent state files** (`/var/ipp-usb/dev/`) – Ensures stable TCP port allocation and DNS-SD name resolution.  
@@ -46,11 +46,6 @@ sudo docker run -d --network host \
 - **`-v ipp-usb-storage:/var/ipp-usb`** → Mounts the persistent storage volume, ensuring printer state persists across reboots.  
 - **`--device-cgroup-rule='c 189:* rmw'`** → Grants read, write, and management permissions for USB printers inside the container.  
 
-To check the logs of `ipp-usb`, run:
-```sh
-  sudo docker logs -f ipp-usb
-```
-
 ### Building and Running `ipp-usb` Locally
 
 #### Prerequisites
@@ -72,7 +67,7 @@ The first step is to build the Rock image from the `rockcraft.yaml` configuratio
 
 Navigate to the directory containing `rockcraft.yaml` and run:  
 ```sh
-sudo rockcraft pack -v
+  rockcraft pack -v
 ```  
 
 **2. Convert the Rock Image to a Docker Image**  
@@ -89,8 +84,6 @@ sudo docker volume create ipp-usb-storage
 This volume stores:  
 - **Persistent state files** (`/var/ipp-usb/dev/`) – Ensures stable TCP port allocation and DNS-SD name resolution.  
 - **Lock files** (`/var/ipp-usb/lock/`) – Prevents multiple instances from running simultaneously.  
-
----
 
 **4. Run the Container with Required Mounts**  
 Start the `ipp-usb` container locally using:  
