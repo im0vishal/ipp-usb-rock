@@ -141,7 +141,7 @@ Exit the container and restart it to apply the updated configuration:
 sudo docker restart ipp-usb
 ```
 
-### **Viewing Logs in the `ipp-usb` Container**  
+**Viewing Logs in the `ipp-usb` Container**  
 
 The `ipp-usb` container logs important events and errors to `/var/log/ipp-usb/main.log`. Since the container is immutable, logs are stored inside the container and can be accessed using Docker commands.  
 
