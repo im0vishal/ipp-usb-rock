@@ -14,13 +14,13 @@
 
 To run the `ipp-usb` container while ensuring that its state persists across restarts, follow these steps.  
 
-### **1. Pull the `ipp-usb` Docker Image**  
+#### **1. Pull the `ipp-usb` Docker Image**  
 The latest image is available on the GitHub Container Registry. Pull it using:  
 ```sh
 sudo docker pull ghcr.io/openprinting/ipp-usb:latest
 ```  
 
-### **2. Create a Persistent Storage Volume**  
+#### **2. Create a Persistent Storage Volume**  
 `ipp-usb` maintains important state files that should persist across container restarts. Create a Docker volume for this:  
 ```sh
 sudo docker volume create ipp-usb-storage
@@ -30,7 +30,7 @@ This volume will store:
 - **Lock files** (`/var/ipp-usb/lock/`) – Prevents multiple instances from running simultaneously.  
 
 
-### **3. Run the Container with Required Mounts**  
+#### **3. Run the Container with Required Mounts**  
 Start the container with the necessary options:  
 ```sh
 sudo docker run -d --network host \
@@ -40,8 +40,7 @@ sudo docker run -d --network host \
     --name ipp-usb \
     ghcr.io/openprinting/ipp-usb:latest
 ```  
-
-#### **Explanation of Flags**  
+ 
 - **`--network host`** → Uses the host’s network for proper IPP-over-USB and Avahi service discovery.  
 - **`-v /dev/bus/usb:/dev/bus/usb:ro`** → Grants read-only access to USB devices, allowing printer detection.  
 - **`-v ipp-usb-storage:/var/ipp-usb`** → Mounts the persistent storage volume, ensuring printer state persists across reboots.  
@@ -103,8 +102,7 @@ sudo docker run -d --network host \
     --name ipp-usb \
     ipp-usb:latest
 ```  
-
-**Explanation of Flags**  
+ 
 - **`--network host`** → Uses the host’s network for proper IPP-over-USB and Avahi service discovery.  
 - **`-v /dev/bus/usb:/dev/bus/usb:ro`** → Grants read-only access to USB devices, allowing printer detection.  
 - **`-v ipp-usb-storage:/var/ipp-usb`** → Mounts the persistent storage volume, ensuring printer state persists across reboots.  
