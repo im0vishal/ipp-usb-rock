@@ -144,7 +144,7 @@ Since the Rock image does not include text editors inside the container, you mus
 
 The `ipp-usb` container logs important events and errors to `/var/log/ipp-usb/main.log`. Since the container is immutable, you need to either **mount the log directory** for persistence or **use Docker commands** to inspect logs.  
 
----
+
 
 ### **1. Using Docker Logs**  
 To view real-time logs from the running container, use:  
@@ -154,7 +154,7 @@ sudo docker logs -f ipp-usb
 - The `-f` flag follows the logs in real-time.  
 - Replace `ipp-usb` with your actual container name if different.  
 
----
+
 
 ### **2. Accessing Logs Inside the Container**  
 If you need to inspect logs manually, enter the container shell:  
@@ -166,7 +166,7 @@ Then, inside the container, run:
 cat /var/log/ipp-usb/main.log
 ```
 
----
+
 
 ### **3. Persisting Logs by Mounting a Directory**  
 If you want logs to persist after container restarts, mount a host directory to store logs:  
@@ -182,7 +182,7 @@ sudo docker run -d --network host \
 - Replace `/path/to/logs` with an actual directory on your host system.  
 - Logs will be available at `/path/to/logs/main.log` on the host.  
 
----
+
 
 ### **4. Checking Logs Without Entering the Container**  
 If logs are mounted to a directory on the host, view them directly:  
@@ -191,4 +191,4 @@ cat /path/to/logs/main.log
 tail -f /path/to/logs/main.log   # Follow logs in real-time
 ```
 
----
+
