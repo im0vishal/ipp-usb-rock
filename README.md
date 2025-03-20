@@ -62,7 +62,7 @@ sudo docker run -d --network host \
 
 **To Build and Run the `ipp-usb` Rock Image Locally, follow these steps** 
 
-**1. Build the `ipp-usb` Rock Image**  
+#### **1. Build the `ipp-usb` Rock Image**  
 The first step is to build the Rock image from the `rockcraft.yaml` configuration file. This image will include all required dependencies and configurations for `ipp-usb`.  
 
 Navigate to the directory containing `rockcraft.yaml` and run:  
@@ -70,13 +70,13 @@ Navigate to the directory containing `rockcraft.yaml` and run:
   rockcraft pack -v
 ```  
 
-**2. Convert the Rock Image to a Docker Image**  
+#### **2. Convert the Rock Image to a Docker Image**  
 Once the `.rock` file is built, convert it into a Docker image using:  
 ```sh
 sudo rockcraft.skopeo --insecure-policy copy oci-archive:<rock_image> docker-daemon:ipp-usb:latest
 ```  
 
-**3. Create a Persistent Storage Volume**  
+#### **3. Create a Persistent Storage Volume**  
 To maintain state across restarts, create a Docker volume for `ipp-usb`:  
 ```sh
 sudo docker volume create ipp-usb-storage
@@ -85,7 +85,7 @@ This volume stores:
 - **Persistent state files** (`/var/ipp-usb/dev/`) – Ensures stable TCP port allocation and DNS-SD name resolution.  
 - **Lock files** (`/var/ipp-usb/lock/`) – Prevents multiple instances from running simultaneously.  
 
-**4. Run the Container with Required Mounts**  
+#### **4. Run the Container with Required Mounts**  
 Start the `ipp-usb` container locally using:  
 ```sh
 sudo docker run -d --network host \
@@ -119,23 +119,23 @@ By default, the container uses the built-in configuration, which can be modified
 
 ### **Modifying the Configuration File Inside the Container**  
 
-#### **1 Enter the Running Container**  
+#### **1. Enter the Running Container**  
 Use the following command to access the container’s shell:  
 ```sh
 sudo docker exec -it ipp-usb bash
 ```
 
-#### **2 Open the Configuration File in Nano**  
+#### **2. Open the Configuration File in Nano**  
 Once inside the container, open the configuration file using `nano`:  
 ```sh
 nano /etc/ipp-usb/ipp-usb.conf
 ```
 
-#### **3 Edit and Save the File**  
+#### **3. Edit and Save the File**  
 - Make the necessary changes to the file.  
 - Press `CTRL + X`, then `Y`, and hit `Enter` to save the changes.  
 
-#### **4 Restart the Container to Apply Changes**  
+#### **4. Restart the Container to Apply Changes**  
 Exit the container and restart it to apply the updated configuration:  
 ```sh
 sudo docker restart ipp-usb
@@ -153,25 +153,26 @@ sudo docker logs -f ipp-usb
 - The `-f` flag follows the logs in real-time.  
 - Replace `ipp-usb` with your actual container name if different.  
 
-#### **2. Accessing Logs Inside the Container**  
-If you need to inspect logs manually, enter the container shell:  
+#### **2. Viewing Logs Inside the Container**  
+
+To inspect logs manually, first enter the container shell:  
 ```sh
 sudo docker exec -it ipp-usb bash
 ```  
-Then, inside the container, run:  
-```sh
-tail -f /var/log/ipp-usb/main.log
-```  
-This will display new log entries in real-time. If you only want to see the last few lines, use:  
-```sh
-tail -n 50 /var/log/ipp-usb/main.log
-```  
-To view the full log file at once, use:  
-```sh
-cat /var/log/ipp-usb/main.log
-```  
 
-Using `tail -f` is preferable for continuous monitoring, whereas `cat` is better for quick one-time checks.
+Once inside the container, use one of the following methods:  
+
+- **Monitor logs in real-time:**  
+  ```sh
+  tail -f /var/log/ipp-usb/main.log
+  ```  
+  This continuously displays new log entries as they appear.  
+
+- **Display the full log file at once:**  
+  ```sh
+  cat /var/log/ipp-usb/main.log
+  ```  
+  Best for reviewing the complete log content.  
 
 
 
