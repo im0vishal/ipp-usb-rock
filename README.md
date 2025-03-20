@@ -146,7 +146,7 @@ The `ipp-usb` container logs important events and errors to `/var/log/ipp-usb/ma
 
 
 
-### **1. Using Docker Logs**  
+#### **1. Using Docker Logs**  
 To view real-time logs from the running container, use:  
 ```sh
 sudo docker logs -f ipp-usb
@@ -156,7 +156,7 @@ sudo docker logs -f ipp-usb
 
 
 
-### **2. Accessing Logs Inside the Container**  
+#### **2. Accessing Logs Inside the Container**  
 If you need to inspect logs manually, enter the container shell:  
 ```sh
 sudo docker exec -it ipp-usb bash
@@ -168,7 +168,7 @@ cat /var/log/ipp-usb/main.log
 
 
 
-### **3. Persisting Logs by Mounting a Directory**  
+#### **3. Persisting Logs by Mounting a Directory**  
 If you want logs to persist after container restarts, mount a host directory to store logs:  
 ```sh
 sudo docker run -d --network host \
@@ -184,7 +184,7 @@ sudo docker run -d --network host \
 
 
 
-### **4. Checking Logs Without Entering the Container**  
+#### **4. Checking Logs Without Entering the Container**  
 If logs are mounted to a directory on the host, view them directly:  
 ```sh
 cat /path/to/logs/main.log
